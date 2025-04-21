@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Online Compiler</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #0d1117;
+      color: #c9d1d9;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    header {
+      padding: 1rem;
+      background: #161b22;
+      font-size: 1.5rem;
+      text-align: center;
+      border-bottom: 1px solid #30363d;
+      position: relative;
+    }
+
+    #controls {
+      display: flex;
+      gap: 1rem;
+      padding: 1rem;
+      background: #161b22;
+      align-items: center;
+      border-bottom: 1px solid #30363d;
+    }
+
+    select, button, textarea {
+      padding: 0.5rem;
+      background: #21262d;
+      color: #c9d1d9;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+    }
+
+    button {
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: #238636;
+      border-color: #2ea043;
+    }
+
+    #editor {
+      flex: 1;
+      height: 300px;
+    }
+
+    #output {
+      background: #0d1117;
+      border-top: 1px solid #30363d;
+      padding: 1rem;
+      overflow-y: auto;
+      height: 200px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      color: #c9d1d9;
+    }
+
+    /* Light/Dark Toggle */
+    .dark-mode {
+      background-color: #0d1117;
+      color: #c9d1d9;
+    }
+
+    .light-mode {
+      background-color: #f5f5f5;
+      color: #333;
+    }
+
+    .toggle-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      cursor: pointer;
+      padding: 10px;
+      background-color: #61dafb;
+      border: none;
+      border-radius: 5px;
+    }
+
+    .save-btn {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      cursor: pointer;
+      padding: 10px;
+      background-color: #ffa500;
+      border: none;
+      border-radius: 5px;
+    }
+
+    .output-error {
+      color: #f44336;
+      background-color: #ffebee;
+      padding: 10px;
+      border-radius: 5px;
+    }
+
+    .output-success {
+      color: #4caf50;
+      background-color: #e8f5e9;
+      padding: 10px;
+      border-radius: 5px;
+    }
+
+  </style>
+</head>
+<body class="dark-mode">
+
+  <header>⚡ AI Compiler</header>
+
+  <button class="toggle-btn" onclick="toggleMode()">🌙</button>
+  <button class="save-btn" onclick="saveCode()">💾 Save</button>
+
+  <div id="controls">
+    <select id="language" onchange="updateCode()">
+      <option value="python3">Python</option>
+      <option value="cpp">C++</option>
+      <option value="java">Java</option>
+      <option value="javascript">JavaScript</option>
+      <option value="ruby">Ruby</option>
+      <option value="go">Go</option>
+      <option value="c">C</option>
+      <option value="php">PHP</option>
+      <option value="swift">Swift</option>
+      <option value="rust">Rust</option>
+      <option value="sql">SQL</option> <!-- Added SQL option -->
+    </select>
+    <button onclick="runCode()">Run ▶</button>
+  </div>
+
+  <div id="editor"></div>
+
+  <div id="output">💬 Output will appear here...</div>
+
+  <!-- Monaco Editor -->
+  <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.34.1/min/vs/loader.js"></script>
+  <script>
+    let editor;
+
+    const defaultCode = {
+      python3: `print("Hello, World!")`,
+      cpp: `#include <iostream>\nint main() { std::cout << "Hello, World!" << std::endl; return 0; }`,
+      java: `public class Main { public static void main(String[] args) { System.out.println("Hello, World!"); } }`,
+      javascript: `console.log("Hello, World!");`,
+      ruby: `puts "Hello, World!"`,
+      go: `package main\nimport "fmt"\nfunc main() { fmt.Println("Hello, World!") }`,
+      c: `#include <stdio.h>\nint main() { printf("Hello, World!\\n"); return 0; }`,
+      php: `<?php echo "Hello, World!"; ?>`,
+      swift: `print("Hello, World!")`,
+      rust: `fn main() { println!("Hello, World!"); }`,
+      sql: `-- SQL query to select a basic message\nSELECT 'Hello, World!' AS message;`
+    };
+
+    require.config({ paths: { vs: "https://cdn.jsdelivr.net/npm/monaco-editor@0.34.1/min/vs" }});
+    require(["vs/editor/editor.main"], function () {
+      editor = monaco.editor.create(document.getElementById("editor"), {
+        value: defaultCode["python3"], // Default to Python
+        language: "python",
+        theme: "vs-dark",
+        automaticLayout: true,
+      });
+    });
+
+    function updateCode() {
+      const language = document.getElementById("language").value;
+      editor.setValue(defaultCode[language] || `/* Basic Problem: Display "Hello, World!" */`);
+      editor.setModelLanguage(editor.getModel(), language); // Switch editor language based on selection
+    }
+
+    function toggleMode() {
+      const body = document.body;
+      const currentTheme = body.classList.contains("dark-mode") ? "dark" : "light";
+      
+      if (currentTheme === "dark") {
+        body.classList.remove("dark-mode");
+        body.classList.add("light-mode");
+        monaco.editor.setTheme("vs"); // Light theme for Monaco
+      } else {
+        body.classList.remove("light-mode");
+        body.classList.add("dark-mode");
+        monaco.editor.setTheme("vs-dark"); // Dark theme for Monaco
+      }
+    }
+
+    function saveCode() {
+      const code = editor.getValue();
+      const blob = new Blob([code], { type: 'text/plain' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'code.txt';
+      link.click();
+    }
+
+    function runCode() {
+      const code = editor.getValue();
+      const language = document.getElementById("language").value;
+
+      document.getElementById("output").innerText = "⏳ Running your code...";
+
+      fetch("http://localhost:3000/compile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, language }),
+      })
+      .then(res => res.json())
+      .then(data => {
+        const outputElement = document.getElementById("output");
+        if (data.output && data.output.includes("Error")) {
+          outputElement.classList.add("output-error");
+          outputElement.classList.remove("output-success");
+          outputElement.innerText = data.output || "❌ Error running code.";
+        } else {
+          outputElement.classList.add("output-success");
+          outputElement.classList.remove("output-error");
+          outputElement.innerText = data.output || "✅ Code ran successfully!";
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        const outputElement = document.getElementById("output");
+        outputElement.classList.add("output-error");
+        outputElement.classList.remove("output-success");
+        outputElement.innerText = "❌ Error running code.";
+      });
+    }
+  </script>
+</body>
+</html>
